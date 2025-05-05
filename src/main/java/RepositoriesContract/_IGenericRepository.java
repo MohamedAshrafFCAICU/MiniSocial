@@ -8,9 +8,9 @@ public interface _IGenericRepository<T>
 
     public T getById(int id);
 
-    public void Add(T entity);
+    public void add(T entity);
 
-    public void Update(T entity);
+    public void update(T entity);
 
-    public void Delete(int id);
+    public void delete(int id);
 }

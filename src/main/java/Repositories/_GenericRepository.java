@@ -2,11 +2,14 @@ package Repositories;
 
 import Entities._BaseEntity;
 import RepositoriesContract._IGenericRepository;
+import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 
 import java.util.List;
 
+@Stateless
 public class _GenericRepository<T extends _BaseEntity> implements _IGenericRepository<T>
 {
     @PersistenceContext(unitName = "MiniSocial")
@@ -19,13 +22,19 @@ public class _GenericRepository<T extends _BaseEntity> implements _IGenericRepos
         this.entityClassType = entityClassType;
     }
 
-
+    public _GenericRepository() {
+        // No-args constructor for CDI
+    }
 
     @Override
     public List<T> getAll()
     {
-        return entityManager.createQuery("SELECT e FROM " + entityClassType.getSimpleName() + " e", entityClassType)
-                .getResultList();
+       TypedQuery<T> objects =   entityManager.createQuery("SELECT e FROM " + entityClassType.getSimpleName() + " e", entityClassType);
+       List<T> list = objects.getResultList();
+
+       return list.isEmpty() ? null : list;
+
+
     }
 
     @Override
@@ -35,17 +44,17 @@ public class _GenericRepository<T extends _BaseEntity> implements _IGenericRepos
     }
 
     @Override
-    public void Add(T entity) {
+    public void add(T entity) {
         entityManager.persist(entity);
     }
 
     @Override
-    public void Update(T entity) {
+    public void update(T entity) {
         entityManager.merge(entity);
     }
 
     @Override
-    public void Delete(int id) {
+    public void delete(int id) {
         T entity = entityManager.find(entityClassType, id);
         if(entity != null)
         {

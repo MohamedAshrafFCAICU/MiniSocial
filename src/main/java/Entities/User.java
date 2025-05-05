@@ -58,7 +58,7 @@ public class User extends _BaseEntity
 
 
     // Navigational Properties:
-    @OneToOne(optional = true , cascade = CascadeType.ALL , fetch = FetchType.LAZY)
+    @OneToOne(optional = true , cascade = CascadeType.ALL , fetch = FetchType.LAZY )
     @JoinColumn( name = "authentication_id")
     private Authentication authentication = new Authentication();
 
