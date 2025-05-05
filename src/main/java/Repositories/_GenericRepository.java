@@ -40,17 +40,22 @@ public class _GenericRepository<T extends _BaseEntity> implements _IGenericRepos
     @Override
     public T getById(int id)
     {
-        return entityManager.find(entityClassType, id);
+        T obj = entityManager.find(entityClassType, id);
+        return obj == null? null : obj;
     }
 
     @Override
-    public void add(T entity) {
-        entityManager.persist(entity);
+    public void add(T entity)
+    {
+        if(entity != null)
+            entityManager.persist(entity);
     }
 
     @Override
-    public void update(T entity) {
-        entityManager.merge(entity);
+    public void update(T entity)
+    {
+        if(entity != null)
+            entityManager.merge(entity);
     }
 
     @Override

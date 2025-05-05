@@ -8,4 +8,6 @@ public interface IUserRepository extends _IGenericRepository<User>
 
     public User getUserByPhone(String phone);
 
+    public void addFriend(int friendId1, int friendId2);
+
 }

@@ -1,7 +1,6 @@
 package Repositories;
 
 import Entities.Authentication;
-import Entities.User;
 import RepositoriesContract.IAuthenticationRepository;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.TypedQuery;

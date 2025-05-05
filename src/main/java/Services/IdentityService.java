@@ -63,9 +63,9 @@ public class IdentityService implements IIdentityService
             userRepository.add(user);
             return "User Registered Successfully";
         }
-        catch (Exception e)
+        catch (InternalServerException e)
         {
-            throw new InternalServerException("Error during register a user" , e);
+            throw new InternalServerException("Error during register a user" );
         }
 
     }
@@ -105,9 +105,9 @@ public class IdentityService implements IIdentityService
 
             return user.getAuthentication().getToken();
         }
-        catch (Exception e)
+        catch (InternalServerException e)
         {
-            throw new InternalServerException("Error during login a user" , e);
+            throw new InternalServerException("Error during login a user" );
         }
 
     }
@@ -129,9 +129,9 @@ public class IdentityService implements IIdentityService
 
             return "User Logout Successfully";
         }
-        catch (Exception e)
+        catch (InternalServerException e)
         {
-            throw new InternalServerException("Error during logout a user" , e);
+            throw new InternalServerException("Error during logout a user" );
         }
 
     }
@@ -175,9 +175,9 @@ public class IdentityService implements IIdentityService
             return "Profile Updated Successfully";
 
         }
-        catch (Exception e)
+        catch (InternalServerException e)
         {
-            throw new InternalServerException("Error during update profile for a user" , e);
+            throw new InternalServerException("Error during update profile for a user");
         }
 
 
