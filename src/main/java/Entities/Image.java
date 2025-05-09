@@ -17,8 +17,8 @@ public class Image extends _BaseEntity
     @JoinColumn(name = "post_id")
     private Post post;
 
-    @ManyToOne(fetch = FetchType.LAZY , optional = false)
-    @JoinColumn(name = "comment_id" , nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY , optional = true)
+    @JoinColumn(name = "comment_id" , nullable = true)
     private Comment comment;
 
     public String getUrl() {

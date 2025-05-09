@@ -23,6 +23,10 @@ public class Comment extends _BaseEntity
     @OneToMany(mappedBy = "comment" , cascade = CascadeType.ALL , fetch = FetchType.LAZY)
     private Set<Link> links = new HashSet<>();
 
+    // *** Comment has Likes *** //
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Like> likes = new HashSet<>();
+
     @ManyToOne(fetch = FetchType.LAZY , optional = false)
     @JoinColumn(name = "post_id" , nullable = false)
     private Post post;
@@ -61,6 +65,14 @@ public class Comment extends _BaseEntity
 
     public void setLinks(Set<Link> links) {
         this.links = links;
+    }
+
+    public Set<Like> getLikes() {
+        return likes;
+    }
+
+    public void setLikes(Set<Like> likes) {
+        this.likes = likes;
     }
 
     public Post getPost() {

@@ -49,6 +49,10 @@ public class Post extends _BaseEntity
     @OneToMany(mappedBy = "post" , cascade = CascadeType.ALL ,  fetch = FetchType.LAZY)
     private Set<Comment> comments = new HashSet<>();
 
+    @ManyToOne(optional = true, fetch = FetchType.LAZY , cascade = CascadeType.ALL)
+    @JoinColumn(name = "group_id" , nullable = true)
+    private Group group;
+
 
     public String getDescription() {
         return description;
@@ -114,5 +118,11 @@ public class Post extends _BaseEntity
         this.comments = comments;
     }
 
+    public Group getGroup() {
+        return group;
+    }
 
+    public void setGroup(Group group) {
+        this.group = group;
+    }
 }
