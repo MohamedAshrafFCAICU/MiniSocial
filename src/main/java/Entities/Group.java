@@ -38,6 +38,10 @@ public class Group extends _BaseEntity
     @OneToMany(mappedBy = "group" , fetch = FetchType.LAZY)
     private Set<GroupRequest> groupRequests= new HashSet<>();
 
+    // *** Group has Posts *** //
+    @OneToMany(mappedBy = "group")
+    private Set<Post> posts = new HashSet<>();
+
 
 
     public  String getDescription() {
@@ -96,6 +100,11 @@ public class Group extends _BaseEntity
         this.groupRequests = groupRequests;
     }
 
+    public Set<Post> getPosts() {
+        return posts;
+    }
 
-
+    public void setPosts(Set<Post> posts) {
+        this.posts = posts;
+    }
 }

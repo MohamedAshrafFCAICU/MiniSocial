@@ -19,16 +19,20 @@ public class Like extends _BaseEntity
     @JoinColumn(name = "post_id")
     private Post post;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id")
+    private Comment comment;
+
     @ManyToOne(optional = false , fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id" , nullable = false)
     private User user;
 
 
-    public  LikeType getLikeType() {
+    public LikeType getLikeType() {
         return likeType;
     }
 
-    public void setLikeType( LikeType likeType) {
+    public void setLikeType(LikeType likeType) {
         this.likeType = likeType;
     }
 
@@ -40,6 +44,14 @@ public class Like extends _BaseEntity
         this.post = post;
     }
 
+    public Comment getComment() {
+        return comment;
+    }
+
+    public void setComment(Comment comment) {
+        this.comment = comment;
+    }
+
     public User getUser() {
         return user;
     }
@@ -47,6 +59,4 @@ public class Like extends _BaseEntity
     public void setUser(User user) {
         this.user = user;
     }
-
-
 }
