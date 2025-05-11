@@ -41,25 +41,31 @@ public class PostService implements IPostService
             post.setVisability(postDto.getVisability().trim().toUpperCase().equals("GLOBAL") ? Visability.GLOBAL :
                     postDto.getVisability().trim().toUpperCase().equals("FRIENDS")  ? Visability.FRIENDS : Visability.ONLYME);
 
-            Set<Image> images = new HashSet<>();
-            for (String url : postDto.getImageUrls()) {
-                Image image = new Image();
-                image.setUrl(url);
-                image.setPost(post); // if bidirectional mapping is used
-                images.add(image);
-            }
-            post.setImages(images);
 
-            Set<Link> links = new HashSet<>();
-            for (String url : postDto.getLinkPaths()) {
-                Link link = new Link();
-                link.setPath(url);
-                link.setPost(post); // if bidirectional mapping is used
-                links.add(link);
+            if(postDto.getImageUrls() != null)
+            {
+                Set<Image> images = new HashSet<>();
+                for (String url : postDto.getImageUrls()) {
+                    Image image = new Image();
+                    image.setUrl(url);
+                    image.setPost(post); // if bidirectional mapping is used
+                    images.add(image);
+                }
+                post.setImages(images);
             }
-            post.setLinks(links);
-            postRepository.add(post);
 
+            if(postDto.getLinkPaths() != null)
+            {
+                Set<Link> links = new HashSet<>();
+                for (String url : postDto.getLinkPaths()) {
+                    Link link = new Link();
+                    link.setPath(url);
+                    link.setPost(post); // if bidirectional mapping is used
+                    links.add(link);
+                }
+                post.setLinks(links);
+                postRepository.add(post);
+            }
 
             return "Post Created Successfully";
 
