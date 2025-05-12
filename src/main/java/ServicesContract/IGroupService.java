@@ -15,4 +15,12 @@ public interface IGroupService
     public String respondGroupRequest(String token , GroupResponseToCreateDto groupDto);
 
     public String createPostInGroup(String token , PostInGroupToCreateDto postInGroupDto);
+
+    public String makeAdminInGroup(String token , int groupId , int memberId);
+
+    public String removeMemberFromGroup(String token , int groupId , int memberId);
+
+    public String deleteGroup(String token , int groupId);
+
+    public String deletePostInGroup(String token , int groupId , int postId);
 }

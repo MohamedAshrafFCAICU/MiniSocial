@@ -1,6 +1,8 @@
 package Repositories;
 
 import Entities.Group;
+import Entities.Post;
+import Entities.User;
 import RepositoriesContract.IGroupRepository;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.Query;
@@ -28,8 +30,9 @@ public class GroupRepository extends _GenericRepository<Group> implements IGroup
     }
 
     @Override
-    public void addAdminToGroup(int adminId, int groupId) {
-        Query query1 = entityManager.createNativeQuery("INSERT INTO Admin_Group (user_id, group_id) VALUES (?, ?)", Group.class);
+    public void addAdminToGroup(int adminId, int groupId)
+    {
+        Query query1 = entityManager.createNativeQuery("INSERT INTO Admin_Group (admin_id, group_id) VALUES (?, ?)", Group.class);
         query1.setParameter(1, adminId);
         query1.setParameter(2, groupId);
         query1.executeUpdate();
@@ -46,7 +49,8 @@ public class GroupRepository extends _GenericRepository<Group> implements IGroup
     }
 
     @Override
-    public Boolean isAdminInGroup(int adminId, int groupId) {
+    public Boolean isAdminInGroup(int adminId, int groupId)
+    {
         Query query = entityManager.createNativeQuery("SELECT 1 FROM Admin_Group WHERE group_id = ? AND admin_id = ?");
         query.setParameter(1, groupId);
         query.setParameter(2, adminId);
@@ -57,12 +61,22 @@ public class GroupRepository extends _GenericRepository<Group> implements IGroup
     }
 
     @Override
-    public Boolean isMemberInGroup(int memberId, int groupId) {
+    public Boolean isMemberInGroup(int memberId, int groupId)
+    {
         Query query = entityManager.createNativeQuery("SELECT 1 FROM Member_Group WHERE group_id = ? AND user_id = ?");
         query.setParameter(1, groupId);
         query.setParameter(2, memberId);
         List<?> result = query.getResultList();
         return !result.isEmpty();
+    }
+
+    @Override
+    public void removeMemberFromGroup(int memberId, int groupId)
+    {
+        Query query = entityManager.createNativeQuery("DELETE FROM Member_Group WHERE group_id = ? AND user_id = ?");
+        query.setParameter(1, groupId);
+        query.setParameter(2, memberId);
+        query.executeUpdate();
     }
 
 

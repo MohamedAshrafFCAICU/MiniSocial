@@ -17,6 +17,7 @@ import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Stateless
@@ -256,8 +257,9 @@ public class GroupService implements IGroupService
                     links.add(link);
                 }
                 post.setLinks(links);
-                postRepository.add(post);
             }
+
+            postRepository.add(post);
 
             return "Post created successfully";
         }
@@ -268,4 +270,150 @@ public class GroupService implements IGroupService
 
 
     }
+
+    public String makeAdminInGroup(String token, int groupId, int memberId)
+    {
+        try {
+
+            User admin = _AuthenticationService.authenticate(token, authenticationRepository);
+
+            Group group = groupRepository.getById(groupId);
+
+            if(group==null){
+                throw new ClientException("Group does not exist.");
+            }
+
+            if(!groupRepository.isAdminInGroup(admin.getId(), group.getId())){
+                throw new ClientException("You are not authorized to make this user the group admin.");
+            }
+
+            if(groupRepository.isAdminInGroup(memberId, group.getId())){
+                throw new ClientException("User is already an admin of this group.");
+            }
+
+            if(!groupRepository.isMemberInGroup(memberId, group.getId())){
+                throw new ClientException("The user you provided is not a member of this group.");
+            }
+
+
+            groupRepository.removeMemberFromGroup(memberId, groupId);
+
+            groupRepository.addAdminToGroup(memberId, groupId);
+
+            return "Successfully promoted user "+memberId+" as group admin.";
+
+        }catch (InternalServerException e){
+            throw new InternalServerException("Internal server error");
+        }
+    }
+
+
+    @Override
+    public String removeMemberFromGroup(String token , int groupId , int memberId)
+    {
+        try {
+
+            User admin = _AuthenticationService.authenticate(token, authenticationRepository);
+
+            Group group = groupRepository.getById(groupId);
+
+            if(group==null){
+                throw new ClientException("Group does not exist.");
+            }
+
+            if(!groupRepository.isAdminInGroup(admin.getId(), group.getId())){
+                throw new ClientException("You are not authorized to remove this member from this group.");
+            }
+
+            if(groupRepository.isAdminInGroup(memberId, group.getId())){
+                throw new ClientException("You are not authorized to remove an admin from this group.");
+            }
+
+            if(!groupRepository.isMemberInGroup(memberId, group.getId())){
+                throw new ClientException("The user you provided is not a member of this group.");
+            }
+
+
+            groupRepository.removeMemberFromGroup(memberId, groupId);
+
+            return "Removed user "+memberId+" from group.";
+
+        }catch (InternalServerException e){
+            throw new InternalServerException("Internal server error");
+        }
+    }
+
+
+    @Override
+    public String deleteGroup(String token , int groupId)
+    {
+        try {
+
+            User admin = _AuthenticationService.authenticate(token, authenticationRepository);
+
+            Group group = groupRepository.getById(groupId);
+
+            if(group==null){
+                throw new ClientException("Group does not exist.");
+            }
+
+            if (!groupRepository.isAdminInGroup(admin.getId(), group.getId())) {
+                throw new ClientException("You are not authorized to delete this group.");
+            }
+
+            group.getMembers().clear();
+            group.getAdmins().clear();
+            groupRepository.update(group);
+
+            groupRepository.delete(groupId);
+
+
+            return "Group " + groupId + " deleted successfully.";
+
+        } catch (InternalServerException e) {
+            throw new InternalServerException("Internal server error");
+        }
+    }
+
+    @Override
+    public String deletePostInGroup(String token, int groupId, int postId)
+    {
+
+        try
+        {
+            User user = _AuthenticationService.authenticate(token , authenticationRepository);
+
+            Group group = groupRepository.getById(groupId);
+
+            if(group == null)
+                throw new ClientException("Group does not exist.");
+
+            Post post = postRepository.getById(postId);
+
+            if(post == null)
+                throw new ClientException("Post does not exist.");
+
+            if(post.getGroup() == null)
+                throw new ClientException("This post is not in a group.");
+
+            if(post.getGroup().getId() != group.getId())
+                throw new ClientException("This post is not in this group.");
+
+            if(!groupRepository.isAdminInGroup(user.getId(), group.getId()))
+                throw new ClientException("You are not authorized to delete this post.");
+
+
+            postRepository.delete(postId);
+
+            return "Post " + postId + " deleted successfully.";
+        }
+
+        catch (InternalServerException e)
+        {
+            throw new InternalServerException("Internal server error");
+        }
+
+    }
+
+
 }

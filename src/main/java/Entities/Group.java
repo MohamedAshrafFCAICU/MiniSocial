@@ -11,8 +11,7 @@ import java.util.Set;
 @Table(name = "Groups")
 public class Group extends _BaseEntity
 {
-    @NotNull
-    @Column(nullable = false)
+
     @Size(min = 3 , max = 500)
     private String description;
 
@@ -35,11 +34,11 @@ public class Group extends _BaseEntity
     private Set<User> admins = new HashSet<>();
 
     // *** Group has Group Requests *** //
-    @OneToMany(mappedBy = "group" , fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE, orphanRemoval = true)
     private Set<GroupRequest> groupRequests= new HashSet<>();
 
     // *** Group has Posts *** //
-    @OneToMany(mappedBy = "group")
+    @OneToMany(mappedBy = "group", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private Set<Post> posts = new HashSet<>();
 
 
@@ -108,3 +107,5 @@ public class Group extends _BaseEntity
         this.posts = posts;
     }
 }
+
+

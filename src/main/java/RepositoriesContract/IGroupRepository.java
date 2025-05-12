@@ -1,6 +1,7 @@
 package RepositoriesContract;
 
 import Entities.Group;
+import Entities.Post;
 
 public interface IGroupRepository extends _IGenericRepository<Group>
 {
@@ -13,4 +14,8 @@ public interface IGroupRepository extends _IGenericRepository<Group>
     public Boolean isAdminInGroup(int adminId, int groupId);
 
     public Boolean isMemberInGroup(int memberId, int groupId);
+
+    public void removeMemberFromGroup(int memberId, int groupId);
+
+
 }

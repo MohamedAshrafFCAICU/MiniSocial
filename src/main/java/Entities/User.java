@@ -5,7 +5,6 @@ import Enums.Gender;
 import Enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -95,18 +94,18 @@ public class User extends _BaseEntity
     private Set<Group> groups = new HashSet<>();
 
     // *** User Can Join a Group *** //
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name="Member_Group",
-            joinColumns=@JoinColumn(name="user_id" , nullable = false),
-            inverseJoinColumns=@JoinColumn(name="group_id" , nullable = false))
+            joinColumns=@JoinColumn(name="user_id", nullable = false),
+            inverseJoinColumns=@JoinColumn(name="group_id", nullable = false))
     private Set<Group> memberInGroups = new HashSet<>();
 
     // *** User Can Admin For Group *** //
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name="Admin_Group",
-            joinColumns=@JoinColumn(name="admin_id" , nullable = false),
+            joinColumns=@JoinColumn(name="admin_id", nullable = false),
             inverseJoinColumns=@JoinColumn(name="group_id", nullable = false))
     private Set<Group> adminInGroups = new HashSet<>();
 

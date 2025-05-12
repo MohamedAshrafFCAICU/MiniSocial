@@ -42,11 +42,11 @@ public class Post extends _BaseEntity
     private Set<Link> links = new HashSet<>();
 
     // *** Post has Likes *** //
-    @OneToMany(mappedBy = "post" , cascade = CascadeType.ALL , fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "post" , cascade = CascadeType.REMOVE , fetch = FetchType.LAZY)
     private Set<Like> likes = new HashSet<>();
 
     // *** Post has Comments *** //
-    @OneToMany(mappedBy = "post" , cascade = CascadeType.ALL ,  fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "post" , cascade = CascadeType.REMOVE ,  fetch = FetchType.LAZY)
     private Set<Comment> comments = new HashSet<>();
 
     @ManyToOne(optional = true, fetch = FetchType.LAZY , cascade = CascadeType.ALL)
