@@ -2,6 +2,8 @@ package Services;
 
 import CustomizedExceptions.ClientException;
 import CustomizedExceptions.InternalServerException;
+import CustomizedExceptions.NotFoundException;
+import CustomizedExceptions.UnAuthorizedException;
 import DTOs.*;
 import Entities.Image;
 import Entities.Link;
@@ -11,6 +13,7 @@ import Enums.PostStatus;
 import Enums.Visability;
 import RepositoriesContract.IAuthenticationRepository;
 import RepositoriesContract.IPostRepository;
+import ServicesContract.IActivityLogService;
 import ServicesContract.IPostService;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
@@ -28,6 +31,9 @@ public class PostService implements IPostService
     private IAuthenticationRepository authenticationRepository;
     @EJB
     private IPostRepository postRepository;
+
+    @EJB
+    private IActivityLogService activityLogService;
 
     @Override
     public String createPost(String token, PostToCreateDto postDto)
@@ -67,10 +73,18 @@ public class PostService implements IPostService
                 postRepository.add(post);
             }
 
+            EventToPassDto loginEvent = new EventToPassDto();
+            loginEvent.setUserId(user.getId());
+            loginEvent.setContent(user.getfName() + " has created a post");
+            loginEvent.setEntityType("Posts");
+            loginEvent.setEntityId(postRepository.getPostsByAuthorId(user.getId()).getLast().getId());
+            loginEvent.setEventType("Create_Post");
+            activityLogService.log(loginEvent);
+
             return "Post Created Successfully";
 
         } catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Error");
+            throw e;
         }
     }
 
@@ -81,9 +95,9 @@ public class PostService implements IPostService
         {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Post post = postRepository.getById(postDto.getPostId());
-            if (post == null) throw new ClientException("Post Not Found");
+            if (post == null) throw new NotFoundException("Post Not Found");
             User author = post.getAuthor();
-            if (!author.equals(user)) throw new ClientException("You do not have permission to update this post");
+            if (!author.equals(user)) throw new UnAuthorizedException("You do not have permission to update this post");
             if (postDto.getDescription() != null) {
                 post.setDescription(postDto.getDescription());
             }
@@ -126,7 +140,7 @@ public class PostService implements IPostService
             return "Post Updated Successfully";
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Error");
+            throw e;
         }
     }
 
@@ -137,15 +151,15 @@ public class PostService implements IPostService
         {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Post post = postRepository.getById(postId);
-            if (post == null) throw new ClientException("Post Not Found");
+            if (post == null) throw new NotFoundException("Post Not Found");
             User author = post.getAuthor();
-            if (!author.equals(user)) throw new ClientException("You do not have permission to update this post");
+            if (!author.equals(user)) throw new UnAuthorizedException("You do not have permission to update this post");
             post.setStatus(PostStatus.DELETED);
             postRepository.delete(postId);
             return "Post Deleted Successfully";
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Error");
+            throw e;
         }
     }
 
@@ -246,7 +260,7 @@ public class PostService implements IPostService
             .collect(java.util.stream.Collectors.toList());
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Error");
+            throw e;
         }
     }
 

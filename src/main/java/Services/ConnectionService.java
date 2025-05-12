@@ -2,16 +2,19 @@ package Services;
 
 import CustomizedExceptions.ClientException;
 import CustomizedExceptions.InternalServerException;
+import CustomizedExceptions.NotFoundException;
+import CustomizedExceptions.UnAuthorizedException;
+import DTOs.EventToPassDto;
 import DTOs.FriendRequestToReceiveDto;
 import DTOs.FriendToReturnDto;
 import DTOs.FriendToSuggestDto;
-import DTOs.NotificationEventToPassDto;
 import Entities.FriendRequest;
 import Entities.User;
 import Enums.RequestStatus;
 import RepositoriesContract.IAuthenticationRepository;
 import RepositoriesContract.IConnectionRepository;
 import RepositoriesContract.IUserRepository;
+import ServicesContract.IActivityLogService;
 import ServicesContract.IConnectionService;
 import ServicesContract.INotificationService;
 import jakarta.ejb.*;
@@ -34,6 +37,9 @@ public class ConnectionService implements IConnectionService
     private INotificationService notificationService;
 
     @EJB
+    private IActivityLogService activityLogService;
+
+    @EJB
     private IAuthenticationRepository authenticationRepository;
 
     @Override
@@ -48,7 +54,7 @@ public class ConnectionService implements IConnectionService
             User receiver = userRepository.getById(receiverId);
 
             if(receiver == null)
-                throw new ClientException("There is no user with id "+receiverId);
+                throw new NotFoundException("There is no user with id "+receiverId);
 
             if(sender.getId() == receiver.getId())
                 throw new ClientException("You can't request yourself.");
@@ -71,7 +77,7 @@ public class ConnectionService implements IConnectionService
             connectionRepository.add(newFriendRequest);
 
 
-            NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+            EventToPassDto notificationEvent = new EventToPassDto();
             notificationEvent.setEventType("Friend_Request");
             notificationEvent.setUserId(receiverId);
             notificationEvent.setContent("You have a friend request from " + sender.getfName() + " " + sender.getlName());
@@ -84,7 +90,7 @@ public class ConnectionService implements IConnectionService
             return "The request sent successfully.";
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Exception");
+            throw e;
         }
 
     }
@@ -121,7 +127,7 @@ public class ConnectionService implements IConnectionService
 
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Exception");
+            throw e;
         }
 
     }
@@ -136,10 +142,10 @@ public class ConnectionService implements IConnectionService
 
             FriendRequest friendRequest = connectionRepository.getById(friendRequestId);
             if (friendRequest == null)
-                throw new ClientException("There is no friend request with id "+friendRequestId);
+                throw new NotFoundException("There is no friend request with id "+friendRequestId);
 
             if(friendRequest.getReceiver().getId() != receiver.getId())
-                throw new ClientException("You are not authorized to accept this friend request.");
+                throw new UnAuthorizedException("You are not authorized to accept this friend request.");
 
             if(friendRequest.getRequest() != RequestStatus.PENDING)
                 throw new ClientException("The Request has been already "+ friendRequest.getRequest().toString().toLowerCase() + " before.");
@@ -150,12 +156,24 @@ public class ConnectionService implements IConnectionService
             User sender = friendRequest.getSender();
             userRepository.addFriend(sender.getId(), receiver.getId());
 
+
+
+            EventToPassDto loginEvent = new EventToPassDto();
+            loginEvent.setUserId(receiver.getId());
+            loginEvent.setContent(sender.getfName() + " and " + receiver.getfName() + " are now friends");
+            loginEvent.setEntityType("FriendRequest and Friends");
+            loginEvent.setEntityId(friendRequestId);
+            loginEvent.setEventType("Accept_Request");
+            activityLogService.log(loginEvent);
+
+
+
             return "The request acceptance done successfully.";
 
         }
 
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Exception");
+            throw e;
         }
 
     }
@@ -170,10 +188,10 @@ public class ConnectionService implements IConnectionService
 
             FriendRequest friendRequest = connectionRepository.getById(friendRequestId);
             if (friendRequest == null)
-                throw new ClientException("There is no friend request with id "+friendRequestId);
+                throw new NotFoundException("There is no friend request with id "+friendRequestId);
 
             if(friendRequest.getReceiver().getId() != receiver.getId())
-                throw new ClientException("You are not authorized to accept this friend request.");
+                throw new UnAuthorizedException("You are not authorized to accept this friend request.");
 
             if(friendRequest.getRequest() != RequestStatus.PENDING)
                 throw new ClientException("The Request has been already "+ friendRequest.getRequest().toString().toLowerCase() + " before.");
@@ -184,7 +202,7 @@ public class ConnectionService implements IConnectionService
             return "The request rejection done successfully.";
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Exception");
+            throw e;
         }
 
     }
@@ -219,7 +237,7 @@ public class ConnectionService implements IConnectionService
 
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal Server Exception");
+            throw e;
         }
 
     }
@@ -228,41 +246,48 @@ public class ConnectionService implements IConnectionService
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public List<FriendToSuggestDto> getFriendSuggestions(String token)
     {
-        User user = _AuthenticationService.authenticate(token , authenticationRepository);
+        try {
+            User user = _AuthenticationService.authenticate(token , authenticationRepository);
 
-        Set<User> friends = user.getFriends();
+            Set<User> friends = user.getFriends();
 
-        List<FriendToSuggestDto> friendToSuggestDtos = new ArrayList<>();
+            List<FriendToSuggestDto> friendToSuggestDtos = new ArrayList<>();
 
-        if(friends == null)
-            return friendToSuggestDtos;
+            if(friends == null)
+                return friendToSuggestDtos;
 
-       Set<Integer> excludedSuggestions = new HashSet<>();
-       excludedSuggestions.add(user.getId());
+            Set<Integer> excludedSuggestions = new HashSet<>();
+            excludedSuggestions.add(user.getId());
 
-       for (User friend : friends)
-           excludedSuggestions.add(friend.getId());
+            for (User friend : friends)
+                excludedSuggestions.add(friend.getId());
 
-        for (User friend : friends)
-        {
-            Set<User> friendOfFriends = friend.getFriends();
-            for (User friendOfFriend : friendOfFriends)
+            for (User friend : friends)
             {
-                if(!excludedSuggestions.contains(friendOfFriend.getId()))
+                Set<User> friendOfFriends = friend.getFriends();
+                for (User friendOfFriend : friendOfFriends)
                 {
-                    FriendToSuggestDto friendToSuggestDto = new FriendToSuggestDto();
-                    friendToSuggestDto.setFriendSuggestId(friendOfFriend.getId());
-                    friendToSuggestDto.setFriendSuggestName(friendOfFriend.getfName());
-                    friendToSuggestDto.setFriendSuggestBio(friendOfFriend.getBio());
-                    friendToSuggestDto.setFriendWith(friend.getfName() + " " + friend.getlName());
+                    if(!excludedSuggestions.contains(friendOfFriend.getId()))
+                    {
+                        FriendToSuggestDto friendToSuggestDto = new FriendToSuggestDto();
+                        friendToSuggestDto.setFriendSuggestId(friendOfFriend.getId());
+                        friendToSuggestDto.setFriendSuggestName(friendOfFriend.getfName());
+                        friendToSuggestDto.setFriendSuggestBio(friendOfFriend.getBio());
+                        friendToSuggestDto.setFriendWith(friend.getfName() + " " + friend.getlName());
 
-                    friendToSuggestDtos.add(friendToSuggestDto);
-                    excludedSuggestions.add(friendOfFriend.getId());
+                        friendToSuggestDtos.add(friendToSuggestDto);
+                        excludedSuggestions.add(friendOfFriend.getId());
+                    }
+
                 }
-
             }
+
+            return friendToSuggestDtos;
+        }
+        catch (InternalServerException e)
+        {
+            throw e;
         }
 
-        return friendToSuggestDtos;
     }
 }

@@ -2,7 +2,9 @@ package Services;
 
 import CustomizedExceptions.ClientException;
 import CustomizedExceptions.InternalServerException;
-import DTOs.NotificationEventToPassDto;
+import CustomizedExceptions.NotFoundException;
+import CustomizedExceptions.UnAuthorizedException;
+import DTOs.EventToPassDto;
 import DTOs.NotificationToReturnDto;
 import Entities.Notification;
 import Entities.User;
@@ -37,21 +39,21 @@ public class NotificationService implements INotificationService
     private IAuthenticationRepository authenticationRepository;
 
     @Override
-    public void sendNotification(NotificationEventToPassDto notificationEventDto)
+    public void sendNotification(EventToPassDto notificationEvent)
     {
         Notification notification = new Notification();
-        notification.setEventType(notificationEventDto.getEventType());
-        notification.setContent(notificationEventDto.getContent());
-        notification.setRead(notificationEventDto.getRead());
-        notification.setUser(userRepository.getById(notificationEventDto.getUserId()));
-        notification.setEntityType(notificationEventDto.getEntityType());
-        notification.setEntityId(notificationEventDto.getEntityId());
+        notification.setEventType(notificationEvent.getEventType());
+        notification.setContent(notificationEvent.getContent());
+        notification.setRead(notificationEvent.getRead());
+        notification.setUser(userRepository.getById(notificationEvent.getUserId()));
+        notification.setEntityType(notificationEvent.getEntityType());
+        notification.setEntityId(notificationEvent.getEntityId());
 
         notificationRepository.add(notification);
 
 
         JMSProducer producer = context.createProducer();
-        ObjectMessage message = context.createObjectMessage(notificationEventDto);
+        ObjectMessage message = context.createObjectMessage(notificationEvent);
         producer.send(notificationQueue, message);
     }
 
@@ -66,10 +68,10 @@ public class NotificationService implements INotificationService
             Notification notification = notificationRepository.getById(notificationId);
 
             if(notification == null)
-                throw new ClientException("There is no notification with id " + notificationId);
+                throw new NotFoundException("There is no notification with id " + notificationId);
 
             if(user.getId() != notification.getUser().getId())
-                throw new ClientException("You are not authorized to access this notification.");
+                throw new UnAuthorizedException("You are not authorized to access this notification.");
 
             NotificationToReturnDto notificationToReturnDto = new NotificationToReturnDto();
             notificationToReturnDto.setNotificationId(notification.getId());
@@ -86,7 +88,7 @@ public class NotificationService implements INotificationService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Internal Server Exception.");
+            throw e;
         }
 
 

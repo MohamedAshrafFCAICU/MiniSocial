@@ -2,7 +2,7 @@ package DTOs;
 
 import java.io.Serializable;
 
-public class NotificationEventToPassDto implements Serializable
+public class EventToPassDto implements Serializable
 {
     private int userId;
 

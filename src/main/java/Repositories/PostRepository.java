@@ -31,4 +31,13 @@ public List<Post> getFeedPosts(Integer userId, Set<Integer> friendIds) {
 
     return posts == null ? null : posts;
 }
+
+    @Override
+    public List<Post> getPostsByAuthorId(int userId) {
+        TypedQuery<Post> query = entityManager.createQuery("SELECT p FROM Post p WHERE p.author.id = :userId", Post.class);
+        query.setParameter("userId", userId);
+
+        List<Post> posts = query.getResultList();
+        return posts == null ? null : posts;
+    }
 }

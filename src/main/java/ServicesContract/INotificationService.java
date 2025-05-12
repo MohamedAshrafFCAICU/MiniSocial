@@ -1,11 +1,11 @@
 package ServicesContract;
 
-import DTOs.NotificationEventToPassDto;
+import DTOs.EventToPassDto;
 import DTOs.NotificationToReturnDto;
 
 public interface INotificationService
 {
-    public void sendNotification(NotificationEventToPassDto notificationEventDto);
+    public void sendNotification(EventToPassDto notificationEventDto);
 
     public NotificationToReturnDto openNotification(String token , int notificationId);
 }

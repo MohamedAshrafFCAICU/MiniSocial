@@ -1,6 +1,6 @@
 package MessageDrivenBeans;
 
-import DTOs.NotificationEventToPassDto;
+import DTOs.EventToPassDto;
 import jakarta.ejb.ActivationConfigProperty;
 import jakarta.ejb.MessageDriven;
 import jakarta.jms.JMSException;
@@ -35,9 +35,9 @@ public class NotificationConsumer implements MessageListener {
                 return;
             ObjectMessage objectMessage = (ObjectMessage)message;
             Object object = objectMessage.getObject();
-            if(!(object instanceof NotificationEventToPassDto))
+            if(!(object instanceof EventToPassDto))
                 return;
-            NotificationEventToPassDto notificationEventToPassDto = (NotificationEventToPassDto)object;
+            EventToPassDto notificationEventToPassDto = (EventToPassDto) object;
 
             System.out.println("Notification");
             System.out.println("User Id: "+ notificationEventToPassDto.getUserId());

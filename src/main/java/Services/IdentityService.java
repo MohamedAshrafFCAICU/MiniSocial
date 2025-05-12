@@ -65,7 +65,7 @@ public class IdentityService implements IIdentityService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Error during register a user" );
+            throw e;
         }
 
     }
@@ -107,7 +107,7 @@ public class IdentityService implements IIdentityService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Error during login a user" );
+            throw e;
         }
 
     }
@@ -131,7 +131,7 @@ public class IdentityService implements IIdentityService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Error during logout a user" );
+            throw e;
         }
 
     }
@@ -177,7 +177,7 @@ public class IdentityService implements IIdentityService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Error during update profile for a user");
+            throw e;
         }
 
 

@@ -2,13 +2,14 @@ package Services;
 
 import CustomizedExceptions.ClientException;
 import CustomizedExceptions.InternalServerException;
+import CustomizedExceptions.NotFoundException;
+import CustomizedExceptions.UnAuthorizedException;
+import DTOs.EventToPassDto;
 import DTOs.GroupResponseToCreateDto;
 import DTOs.GroupToCreateDto;
-import DTOs.NotificationEventToPassDto;
 import DTOs.PostInGroupToCreateDto;
 import Entities.*;
 import Enums.RequestStatus;
-import Enums.Visability;
 import RepositoriesContract.IAuthenticationRepository;
 import RepositoriesContract.IGroupRepository;
 import RepositoriesContract.IGroupRequestRepository;
@@ -70,7 +71,7 @@ public class GroupService implements IGroupService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
 
@@ -84,7 +85,7 @@ public class GroupService implements IGroupService
             Group group = groupRepository.getById(groupId);
 
             if (group == null)
-                throw new ClientException("Group not found");
+                throw new NotFoundException("Group not found");
 
             if(groupRepository.isMemberInGroup(user.getId(), group.getId()))
                 throw new ClientException("You are already member of this group");
@@ -117,7 +118,7 @@ public class GroupService implements IGroupService
 
 
 
-            NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+            EventToPassDto notificationEvent = new EventToPassDto();
             notificationEvent.setEventType("Join_Group");
             notificationEvent.setUserId(user.getId());
             notificationEvent.setContent("You have joined successfully to " + group.getGroupName() + " group");
@@ -137,7 +138,7 @@ public class GroupService implements IGroupService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
 
 
@@ -153,7 +154,7 @@ public class GroupService implements IGroupService
             Group group = groupRepository.getById(groupId);
 
             if(group == null)
-                throw new ClientException("Group not found");
+                throw new NotFoundException("Group not found");
 
             if(group.getCreator().getId() == user.getId())
                 throw new ClientException("You Can not leave this group.");
@@ -180,7 +181,7 @@ public class GroupService implements IGroupService
                 groupRequestRepository.delete(groupRequest.getId());
 
 
-            NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+            EventToPassDto notificationEvent = new EventToPassDto();
             notificationEvent.setEventType("Leave_Group");
             notificationEvent.setUserId(user.getId());
             notificationEvent.setContent("You have leaved from " + group.getGroupName() + " group");
@@ -199,7 +200,7 @@ public class GroupService implements IGroupService
         }
         catch (InternalServerException  e)
         {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
 
     }
@@ -214,7 +215,7 @@ public class GroupService implements IGroupService
 
             GroupRequest groupRequest = groupRequestRepository.getById(groupDto.getGroupRequestId());
             if(groupRequest == null)
-                throw new ClientException("Group request not found");
+                throw new NotFoundException("Group request not found");
 
 
             Group group = groupRequest.getGroup();
@@ -230,7 +231,7 @@ public class GroupService implements IGroupService
                 throw new ClientException("The Request is already responded before.");
 
             if(!groupRepository.isAdminInGroup(user.getId(), group.getId()))
-                throw new ClientException("You are not authorized to respond to this group.");
+                throw new UnAuthorizedException("You are not authorized to respond to this group.");
 
             if(groupDto.getResponseStatus().toLowerCase().equals("rejected"))
                 groupRequest.setStatus(RequestStatus.REJECTED);
@@ -249,7 +250,7 @@ public class GroupService implements IGroupService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
 
 
@@ -265,10 +266,10 @@ public class GroupService implements IGroupService
             Group group = groupRepository.getById(postInGroupDto.getGroupId());
 
             if(group == null)
-                throw new ClientException("Group not found");
+                throw new NotFoundException("Group not found");
 
             if(!groupRepository.isMemberInGroup(user.getId(), group.getId()) && !groupRepository.isAdminInGroup(user.getId(), group.getId()))
-                throw new ClientException("You are not authorized to make posts in this group.");
+                throw new UnAuthorizedException("You are not authorized to make posts in this group.");
 
             Post post = new Post();
             post.setAuthor(user);
@@ -305,7 +306,7 @@ public class GroupService implements IGroupService
         }
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
 
 
@@ -319,12 +320,12 @@ public class GroupService implements IGroupService
 
             Group group = groupRepository.getById(groupId);
 
-            if(group==null){
-                throw new ClientException("Group does not exist.");
+            if(group == null){
+                throw new NotFoundException("Group does not exist.");
             }
 
             if(!groupRepository.isAdminInGroup(admin.getId(), group.getId())){
-                throw new ClientException("You are not authorized to make this user the group admin.");
+                throw new UnAuthorizedException("You are not authorized to make this user the group admin.");
             }
 
             if(groupRepository.isAdminInGroup(memberId, group.getId())){
@@ -343,10 +344,9 @@ public class GroupService implements IGroupService
             return "Successfully promoted user "+memberId+" as group admin.";
 
         }catch (InternalServerException e){
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
-
 
     @Override
     public String removeMemberFromGroup(String token , int groupId , int memberId)
@@ -358,15 +358,15 @@ public class GroupService implements IGroupService
             Group group = groupRepository.getById(groupId);
 
             if(group==null){
-                throw new ClientException("Group does not exist.");
+                throw new NotFoundException("Group does not exist.");
             }
 
             if(!groupRepository.isAdminInGroup(admin.getId(), group.getId())){
-                throw new ClientException("You are not authorized to remove this member from this group.");
+                throw new UnAuthorizedException("You are not authorized to remove this member from this group.");
             }
 
             if(groupRepository.isAdminInGroup(memberId, group.getId())){
-                throw new ClientException("You are not authorized to remove an admin from this group.");
+                throw new UnAuthorizedException("You are not authorized to remove an admin from this group.");
             }
 
             if(!groupRepository.isMemberInGroup(memberId, group.getId())){
@@ -379,10 +379,9 @@ public class GroupService implements IGroupService
             return "Removed user "+memberId+" from group.";
 
         }catch (InternalServerException e){
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
-
 
     @Override
     public String deleteGroup(String token , int groupId)
@@ -393,12 +392,12 @@ public class GroupService implements IGroupService
 
             Group group = groupRepository.getById(groupId);
 
-            if(group==null){
-                throw new ClientException("Group does not exist.");
+            if(group == null){
+                throw new NotFoundException("Group does not exist.");
             }
 
             if (!groupRepository.isAdminInGroup(admin.getId(), group.getId())) {
-                throw new ClientException("You are not authorized to delete this group.");
+                throw new UnAuthorizedException("You are not authorized to delete this group.");
             }
 
             group.getMembers().clear();
@@ -411,7 +410,7 @@ public class GroupService implements IGroupService
             return "Group " + groupId + " deleted successfully.";
 
         } catch (InternalServerException e) {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
 
@@ -426,12 +425,12 @@ public class GroupService implements IGroupService
             Group group = groupRepository.getById(groupId);
 
             if(group == null)
-                throw new ClientException("Group does not exist.");
+                throw new NotFoundException("Group does not exist.");
 
             Post post = postRepository.getById(postId);
 
             if(post == null)
-                throw new ClientException("Post does not exist.");
+                throw new NotFoundException("Post does not exist.");
 
             if(post.getGroup() == null)
                 throw new ClientException("This post is not in a group.");
@@ -440,7 +439,7 @@ public class GroupService implements IGroupService
                 throw new ClientException("This post is not in this group.");
 
             if(!groupRepository.isAdminInGroup(user.getId(), group.getId()))
-                throw new ClientException("You are not authorized to delete this post.");
+                throw new UnAuthorizedException("You are not authorized to delete this post.");
 
 
             postRepository.delete(postId);
@@ -450,7 +449,7 @@ public class GroupService implements IGroupService
 
         catch (InternalServerException e)
         {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
 
     }

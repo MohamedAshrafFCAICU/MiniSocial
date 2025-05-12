@@ -2,10 +2,11 @@ package Services;
 
 import CustomizedExceptions.ClientException;
 import CustomizedExceptions.InternalServerException;
+import CustomizedExceptions.NotFoundException;
 import CustomizedExceptions.UnAuthorizedException;
 import DTOs.CommentToCreateDto;
 import DTOs.CommentToUpdateDto;
-import DTOs.NotificationEventToPassDto;
+import DTOs.EventToPassDto;
 import Entities.*;
 import Enums.Visability;
 import RepositoriesContract.IAuthenticationRepository;
@@ -41,7 +42,7 @@ public class CommentService implements ICommentService {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Post post = postRepository.getById(commentToCreateDto.getPostId());
 
-            if (post == null) throw new ClientException("Post not found");
+            if (post == null) throw new NotFoundException("Post not found");
 
             if(post.getVisability() == Visability.ONLYME && post.getAuthor().getId() != user.getId())
                 throw new UnAuthorizedException("You are not authorized to comment on this post");
@@ -54,7 +55,7 @@ public class CommentService implements ICommentService {
                         isFriend = true;
                 }
                 if (!isFriend) {
-                    throw new ClientException("You are not authorized to comment on this post");
+                    throw new UnAuthorizedException("You are not authorized to comment on this post");
                 }
             }
 
@@ -86,14 +87,14 @@ public class CommentService implements ICommentService {
             if (commentToCreateDto.getParentCommentId() != null) {
                 Comment parent = commentRepository.getById(commentToCreateDto.getParentCommentId().intValue());
                 if (parent == null)
-                    throw new ClientException("Parent comment not found");
+                    throw new NotFoundException("Parent comment not found");
                 if(parent.getPost().getId() != commentToCreateDto.getParentCommentId().intValue())
-                    throw new UnAuthorizedException("The parent comment is not in this post.");
+                    throw new ClientException("The parent comment is not in this post.");
                 comment.setParentComment(parent);
             }
             commentRepository.add(comment);
 
-            NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+            EventToPassDto notificationEvent = new EventToPassDto();
             notificationEvent.setEventType("Comment_Post");
             notificationEvent.setUserId(post.getAuthor().getId());
             notificationEvent.setContent(user.getfName() + " " + user.getlName() + " has commented on your post.");
@@ -104,7 +105,7 @@ public class CommentService implements ICommentService {
 
             return "Comment added successfully";
         } catch (InternalServerException e) {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
 
@@ -115,9 +116,9 @@ public class CommentService implements ICommentService {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Comment existing = commentRepository.getById(commentToUpdateDto.getCommentId());
             if (existing == null)
-                throw new ClientException("Comment not found");
+                throw new NotFoundException("Comment not found");
 
-            if (existing.getUser().getId() != user.getId()) throw new ClientException("You are not authorized to update this comment");
+            if (existing.getUser().getId() != user.getId()) throw new UnAuthorizedException("You are not authorized to update this comment");
 
             existing.setDescription(commentToUpdateDto.getDescription());
             Set<Image> updatedImages = new HashSet<>();
@@ -144,7 +145,7 @@ public class CommentService implements ICommentService {
             commentRepository.update(existing);
             return "Comment updated successfully";
         } catch (InternalServerException e) {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
 
@@ -154,13 +155,13 @@ public class CommentService implements ICommentService {
         try {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Comment comment = commentRepository.getById(commentId);
-            if (comment == null) throw new ClientException("Comment not found");
-            if (comment.getUser().getId() != user.getId()) throw new ClientException("You are not authorized to delete this comment");
+            if (comment == null) throw new NotFoundException("Comment not found");
+            if (comment.getUser().getId() != user.getId()) throw new UnAuthorizedException("You are not authorized to delete this comment");
             commentRepository.delete(commentId);
             return "Comment deleted successfully";
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
 }

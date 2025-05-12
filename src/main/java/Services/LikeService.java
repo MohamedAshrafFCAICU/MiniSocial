@@ -2,27 +2,28 @@ package Services;
 
 import CustomizedExceptions.ClientException;
 import CustomizedExceptions.InternalServerException;
+import CustomizedExceptions.NotFoundException;
 import CustomizedExceptions.UnAuthorizedException;
+import DTOs.EventToPassDto;
 import DTOs.LikeForCommentToCreateDto;
 import DTOs.LikeForPostToCreateDto;
-import DTOs.NotificationEventToPassDto;
 import Entities.Comment;
 import Entities.Like;
 import Entities.Post;
 import Entities.User;
 import Enums.LikeType;
 import Enums.Visability;
-import Repositories.CommentRepository;
 import RepositoriesContract.IAuthenticationRepository;
 import RepositoriesContract.ICommentRepository;
 import RepositoriesContract.ILikeRepository;
 import RepositoriesContract.IPostRepository;
+import ServicesContract.IActivityLogService;
 import ServicesContract.ILikeService;
 import ServicesContract.INotificationService;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
-import java.util.List;
+
 import java.util.Set;
 
 @Stateless
@@ -37,6 +38,8 @@ public class LikeService implements ILikeService {
     @EJB
     private INotificationService notificationService;
     @EJB
+    private IActivityLogService activityLogService;
+    @EJB
     private IAuthenticationRepository authenticationRepository;
 
     @Override
@@ -48,7 +51,7 @@ public class LikeService implements ILikeService {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Post post = postRepository.getById(likeForPostToCreateDto.getPostId().intValue());
             if (post == null) {
-                throw new ClientException("Post not found");
+                throw new NotFoundException("Post not found");
             }
             if(post.getVisability() == Visability.ONLYME && post.getAuthor().getId() != user.getId())
                 throw new UnAuthorizedException("You are not authorized to like this post");
@@ -61,7 +64,7 @@ public class LikeService implements ILikeService {
                         isFriend = true;
                 }
                 if (!isFriend) {
-                    throw new ClientException("You are not authorized to like this post");
+                    throw new NotFoundException("You are not authorized to like this post");
                 }
             }
 
@@ -78,20 +81,27 @@ public class LikeService implements ILikeService {
                 likeRepository.add(like);
 
 
-                NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
-                notificationEvent.setEventType("Like_Post");
-                notificationEvent.setUserId(post.getAuthor().getId());
-                notificationEvent.setContent(user.getfName() + " " + user.getlName() + " has liked your post.");
-                notificationEvent.setEntityType("Likes");
-                notificationEvent.setEntityId(likeRepository.getLikeByUserAndPost(user.getId(), post.getId()).getId());
+                EventToPassDto event = new EventToPassDto();
+                event.setEventType("Like_Post");
+                event.setUserId(post.getAuthor().getId());
+                event.setContent(user.getfName() + " " + user.getlName() + " has liked your post.");
+                event.setEntityType("Likes");
+                event.setEntityId(likeRepository.getLikeByUserAndPost(user.getId(), post.getId()).getId());
 
-                notificationService.sendNotification(notificationEvent);
+                notificationService.sendNotification(event);
+
+                event.setUserId(user.getId());
+                event.setContent(user.getfName() + " " + user.getlName() + " has liked a post of " + post.getAuthor().getfName() + " " + post.getAuthor().getlName());
+
+                activityLogService.log(event);
+
+                return "Like added to post successfully";
 
             } catch (IllegalArgumentException e) {
-                throw new ClientException("Invalid like type");
+                throw e;
             }
 
-            return "Like added to post successfully";
+
         }
         catch (InternalServerException e) {
             throw new InternalServerException("Internal server error");
@@ -108,17 +118,18 @@ public class LikeService implements ILikeService {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Like like = likeRepository.getById(LikeId);
             if (like == null) {
-                throw new ClientException("Like not found");
+                throw new NotFoundException("Like not found");
             }
             // Check that the like belongs to the authenticated user
             if (like.getUser().getId() != user.getId()) {
-                throw new ClientException("You are not authorized to remove this like");
+                throw new UnAuthorizedException("You are not authorized to remove this like");
             }
             likeRepository.delete(like.getId());
+
             return "Like removed successfully";
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
 
@@ -132,7 +143,7 @@ public class LikeService implements ILikeService {
             Comment comment = commentRepository.getById(likeForCommentToCreateDto.getCommentId().intValue());
 
             if (comment == null) {
-                throw new ClientException("Comment not found");
+                throw new NotFoundException("Comment not found");
             }
 
             Post post = comment.getPost();
@@ -148,7 +159,7 @@ public class LikeService implements ILikeService {
                         isFriend = true;
                 }
                 if (!isFriend) {
-                    throw new ClientException("You are not authorized to like this comment.");
+                    throw new UnAuthorizedException("You are not authorized to like this comment.");
                 }
             }
 
@@ -168,7 +179,7 @@ public class LikeService implements ILikeService {
             return "Like added to comment successfully";
         }
         catch (InternalServerException e) {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
 
@@ -179,15 +190,16 @@ public class LikeService implements ILikeService {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Like like = likeRepository.getById(likeId);
             if (like == null || like.getComment() == null) {
-                throw new ClientException("Like on comment not found");
+                throw new NotFoundException("Like on comment not found");
             }
             if (like.getUser().getId() != user.getId()) {
-                throw new ClientException("You are not authorized to remove this like");
+                throw new UnAuthorizedException("You are not authorized to remove this like");
             }
             likeRepository.delete(like.getId());
+
             return "Like removed from comment successfully";
         } catch (InternalServerException e) {
-            throw new InternalServerException("Internal server error");
+            throw e;
         }
     }
 }
