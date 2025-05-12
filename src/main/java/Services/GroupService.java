@@ -4,6 +4,7 @@ import CustomizedExceptions.ClientException;
 import CustomizedExceptions.InternalServerException;
 import DTOs.GroupResponseToCreateDto;
 import DTOs.GroupToCreateDto;
+import DTOs.NotificationEventToPassDto;
 import DTOs.PostInGroupToCreateDto;
 import Entities.*;
 import Enums.RequestStatus;
@@ -13,6 +14,7 @@ import RepositoriesContract.IGroupRepository;
 import RepositoriesContract.IGroupRequestRepository;
 import RepositoriesContract.IPostRepository;
 import ServicesContract.IGroupService;
+import ServicesContract.INotificationService;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
@@ -32,6 +34,9 @@ public class GroupService implements IGroupService
 
     @EJB
     private IPostRepository postRepository;
+
+    @EJB
+    private INotificationService notificationService;
 
     @EJB
     private IAuthenticationRepository authenticationRepository;
@@ -81,6 +86,9 @@ public class GroupService implements IGroupService
             if (group == null)
                 throw new ClientException("Group not found");
 
+            if(groupRepository.isMemberInGroup(user.getId(), group.getId()))
+                throw new ClientException("You are already member of this group");
+
             if(groupRepository.isAdminInGroup(user.getId(), group.getId()))
                 throw new ClientException("You are already an admin of this group.");
 
@@ -95,18 +103,35 @@ public class GroupService implements IGroupService
             }
 
             if(group.getPublic())
-            {
                 groupRepository.addMemberToGroup(user.getId(), group.getId());
-                return "You are now member of this group";
+
+            else
+            {
+                User creator = group.getCreator();
+                GroupRequest groupRequest = new GroupRequest();
+                groupRequest.setGroup(group);
+                groupRequest.setReceiver(creator);
+                groupRequest.setSender(user);
+                groupRequestRepository.add(groupRequest);
             }
 
 
-            User creator = group.getCreator();
-            GroupRequest groupRequest = new GroupRequest();
-            groupRequest.setGroup(group);
-            groupRequest.setReceiver(creator);
-            groupRequest.setSender(user);
-            groupRequestRepository.add(groupRequest);
+
+            NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+            notificationEvent.setEventType("Join_Group");
+            notificationEvent.setUserId(user.getId());
+            notificationEvent.setContent("You have joined successfully to " + group.getGroupName() + " group");
+            notificationEvent.setEntityType("Group_Request");
+            if(group.getPublic())
+                notificationEvent.setEntityId(0);
+
+            else
+                notificationEvent.setEntityId(groupRequestRepository.findRequestByUserIdAndGroupId(user.getId() , group.getId()).getId());
+
+            notificationService.sendNotification(notificationEvent);
+
+            if(group.getPublic())
+                return "You are now member of this group";
 
             return "Group join request done successfully.";
         }
@@ -153,6 +178,21 @@ public class GroupService implements IGroupService
             GroupRequest groupRequest  = groupRequestRepository.findRequestByUserIdAndGroupId(user.getId(), group.getId());
             if(groupRequest != null)
                 groupRequestRepository.delete(groupRequest.getId());
+
+
+            NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+            notificationEvent.setEventType("Leave_Group");
+            notificationEvent.setUserId(user.getId());
+            notificationEvent.setContent("You have leaved from " + group.getGroupName() + " group");
+            notificationEvent.setEntityType("Group_Request");
+            if(group.getPublic())
+                notificationEvent.setEntityId(0);
+
+            else
+                notificationEvent.setEntityId(groupRequest.getId());
+
+
+            notificationService.sendNotification(notificationEvent);
 
 
             return "Group leave request done successfully.";

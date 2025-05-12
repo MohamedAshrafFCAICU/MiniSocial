@@ -5,12 +5,14 @@ import CustomizedExceptions.InternalServerException;
 import CustomizedExceptions.UnAuthorizedException;
 import DTOs.CommentToCreateDto;
 import DTOs.CommentToUpdateDto;
+import DTOs.NotificationEventToPassDto;
 import Entities.*;
 import Enums.Visability;
 import RepositoriesContract.IAuthenticationRepository;
 import RepositoriesContract.ICommentRepository;
 import RepositoriesContract.IPostRepository;
 import ServicesContract.ICommentService;
+import ServicesContract.INotificationService;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
@@ -25,6 +27,9 @@ public class CommentService implements ICommentService {
 
     @EJB
     private IPostRepository postRepository;
+
+    @EJB
+    private INotificationService notificationService;
 
     @EJB
     private IAuthenticationRepository authenticationRepository;
@@ -87,6 +92,16 @@ public class CommentService implements ICommentService {
                 comment.setParentComment(parent);
             }
             commentRepository.add(comment);
+
+            NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+            notificationEvent.setEventType("Comment_Post");
+            notificationEvent.setUserId(post.getAuthor().getId());
+            notificationEvent.setContent(user.getfName() + " " + user.getlName() + " has commented on your post.");
+            notificationEvent.setEntityType("Comments");
+            notificationEvent.setEntityId(commentRepository.getCommentByUserAndPostId(user.getId() , post.getId()).getId());
+
+            notificationService.sendNotification(notificationEvent);
+
             return "Comment added successfully";
         } catch (InternalServerException e) {
             throw new InternalServerException("Internal server error");

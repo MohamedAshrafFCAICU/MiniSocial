@@ -38,4 +38,17 @@ public class LikeRepository extends _GenericRepository<Like> implements ILikeRep
         return count > 0;
     }
 
+    @Override
+    public Like getLikeByUserAndPost(int userId, int postId)
+    {
+        TypedQuery<Like> query = entityManager.createQuery("SELECT l FROM Like l WHERE l.user.id = :userId AND l.post.id = :postId", Like.class);
+        query.setParameter("userId", userId);
+        query.setParameter("postId", postId);
+
+        List<Like> likes = query.getResultList();
+
+        return likes.isEmpty() ? null : likes.getLast();
+
+    }
+
 } 

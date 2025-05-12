@@ -5,6 +5,7 @@ import CustomizedExceptions.InternalServerException;
 import DTOs.FriendRequestToReceiveDto;
 import DTOs.FriendToReturnDto;
 import DTOs.FriendToSuggestDto;
+import DTOs.NotificationEventToPassDto;
 import Entities.FriendRequest;
 import Entities.User;
 import Enums.RequestStatus;
@@ -12,6 +13,7 @@ import RepositoriesContract.IAuthenticationRepository;
 import RepositoriesContract.IConnectionRepository;
 import RepositoriesContract.IUserRepository;
 import ServicesContract.IConnectionService;
+import ServicesContract.INotificationService;
 import jakarta.ejb.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,6 +29,9 @@ public class ConnectionService implements IConnectionService
 
     @EJB
     private IUserRepository userRepository;
+
+    @EJB
+    private INotificationService notificationService;
 
     @EJB
     private IAuthenticationRepository authenticationRepository;
@@ -64,6 +69,17 @@ public class ConnectionService implements IConnectionService
             newFriendRequest.setReceiver(receiver);
 
             connectionRepository.add(newFriendRequest);
+
+
+            NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+            notificationEvent.setEventType("Friend_Request");
+            notificationEvent.setUserId(receiverId);
+            notificationEvent.setContent("You have a friend request from " + sender.getfName() + " " + sender.getlName());
+            notificationEvent.setEntityType("FriendRequest");
+            notificationEvent.setEntityId(connectionRepository.getFriendRequestBySenderIdAndReceiverId(sender.getId() , receiver.getId()).getId());
+
+            notificationService.sendNotification(notificationEvent);
+
 
             return "The request sent successfully.";
         }

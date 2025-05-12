@@ -15,4 +15,14 @@ public class CommentRepository extends _GenericRepository<Comment> implements IC
         super(Comment.class);
     }
 
-} 
+    @Override
+    public Comment getCommentByUserAndPostId(int userId, int postId)
+    {
+        TypedQuery<Comment> query = entityManager.createQuery("SELECT c FROM Comment c WHERE c.user.id = :userId AND c.post.id = :postId", Comment.class);
+        query.setParameter("userId", userId);
+        query.setParameter("postId", postId);
+        List<Comment> comments = query.getResultList();
+
+        return comments.isEmpty() ? null : comments.getLast();
+    }
+}

@@ -5,6 +5,7 @@ import CustomizedExceptions.InternalServerException;
 import CustomizedExceptions.UnAuthorizedException;
 import DTOs.LikeForCommentToCreateDto;
 import DTOs.LikeForPostToCreateDto;
+import DTOs.NotificationEventToPassDto;
 import Entities.Comment;
 import Entities.Like;
 import Entities.Post;
@@ -17,6 +18,7 @@ import RepositoriesContract.ICommentRepository;
 import RepositoriesContract.ILikeRepository;
 import RepositoriesContract.IPostRepository;
 import ServicesContract.ILikeService;
+import ServicesContract.INotificationService;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 
@@ -33,10 +35,13 @@ public class LikeService implements ILikeService {
     @EJB
     private IPostRepository postRepository;
     @EJB
+    private INotificationService notificationService;
+    @EJB
     private IAuthenticationRepository authenticationRepository;
 
     @Override
-    public String addLikeForPost(String token, LikeForPostToCreateDto likeForPostToCreateDto) {
+    public String addLikeForPost(String token, LikeForPostToCreateDto likeForPostToCreateDto)
+    {
 
         try
         {
@@ -60,19 +65,32 @@ public class LikeService implements ILikeService {
                 }
             }
 
-            // Prevent duplicate likes
+
             if ( likeRepository.existsByUserAndPost(user.getId(), post.getId()) ) {
                 throw new ClientException("You already liked this post");
             }
             Like like = new Like();
             like.setPost(post);
             like.setUser(user);
+
             try {
                 like.setLikeType(LikeType.valueOf(likeForPostToCreateDto.getLikeType().toUpperCase()));
+                likeRepository.add(like);
+
+
+                NotificationEventToPassDto notificationEvent = new NotificationEventToPassDto();
+                notificationEvent.setEventType("Like_Post");
+                notificationEvent.setUserId(post.getAuthor().getId());
+                notificationEvent.setContent(user.getfName() + " " + user.getlName() + " has liked your post.");
+                notificationEvent.setEntityType("Likes");
+                notificationEvent.setEntityId(likeRepository.getLikeByUserAndPost(user.getId(), post.getId()).getId());
+
+                notificationService.sendNotification(notificationEvent);
+
             } catch (IllegalArgumentException e) {
                 throw new ClientException("Invalid like type");
             }
-            likeRepository.add(like);
+
             return "Like added to post successfully";
         }
         catch (InternalServerException e) {
@@ -83,7 +101,8 @@ public class LikeService implements ILikeService {
     }
 
     @Override
-    public String removeLikeForPost(String token, int LikeId) {
+    public String removeLikeForPost(String token, int LikeId)
+    {
 
         try {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
@@ -104,7 +123,8 @@ public class LikeService implements ILikeService {
     }
 
     @Override
-    public String addLikeForComment(String token, LikeForCommentToCreateDto likeForCommentToCreateDto) {
+    public String addLikeForComment(String token, LikeForCommentToCreateDto likeForCommentToCreateDto)
+    {
 
         try
         {
@@ -153,7 +173,8 @@ public class LikeService implements ILikeService {
     }
 
     @Override
-    public String removeLikeForComment(String token, int likeId) {
+    public String removeLikeForComment(String token, int likeId)
+    {
         try {
             User user = _AuthenticationService.authenticate(token, authenticationRepository);
             Like like = likeRepository.getById(likeId);
