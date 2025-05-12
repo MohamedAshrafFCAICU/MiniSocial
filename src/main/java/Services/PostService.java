@@ -10,6 +10,7 @@ import Entities.Link;
 import Entities.Post;
 import Entities.User;
 import Enums.PostStatus;
+import Enums.Role;
 import Enums.Visability;
 import RepositoriesContract.IAuthenticationRepository;
 import RepositoriesContract.IPostRepository;
@@ -97,7 +98,7 @@ public class PostService implements IPostService
             Post post = postRepository.getById(postDto.getPostId());
             if (post == null) throw new NotFoundException("Post Not Found");
             User author = post.getAuthor();
-            if (!author.equals(user)) throw new UnAuthorizedException("You do not have permission to update this post");
+            if (!author.equals(user) && user.getRole() != Role.ADMIN) throw new UnAuthorizedException("You do not have permission to update this post");
             if (postDto.getDescription() != null) {
                 post.setDescription(postDto.getDescription());
             }
@@ -153,7 +154,7 @@ public class PostService implements IPostService
             Post post = postRepository.getById(postId);
             if (post == null) throw new NotFoundException("Post Not Found");
             User author = post.getAuthor();
-            if (!author.equals(user)) throw new UnAuthorizedException("You do not have permission to update this post");
+            if (user.getRole() != Role.ADMIN && !author.equals(user)) throw new UnAuthorizedException("You do not have permission to update this post");
             post.setStatus(PostStatus.DELETED);
             postRepository.delete(postId);
             return "Post Deleted Successfully";
@@ -263,6 +264,5 @@ public class PostService implements IPostService
             throw e;
         }
     }
-
 
 }

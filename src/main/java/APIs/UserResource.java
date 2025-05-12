@@ -2,6 +2,7 @@ package APIs;
 
 import DTOs.UserToLoginDto;
 import DTOs.UserToRegisterDto;
+import DTOs.UserToReturnDto;
 import DTOs.UserToUpdateProfileDto;
 import ServicesContract.IIdentityService;
 import jakarta.inject.Inject;
@@ -45,5 +46,22 @@ public class UserResource
     {
         return identityService.updateProfile(token, userDto);
     }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public UserToReturnDto getUserByEmail(@HeaderParam("Authorization") String token ,@QueryParam("email") String email )
+    {
+        return identityService.getUserByEmail(token, email);
+    }
+
+    @DELETE
+    @Path("/{userId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String deleteUser(@HeaderParam("Authorization") String token ,@PathParam("userId")int userId )
+    {
+       return identityService.deleteUser(token, userId);
+    }
+
+
 
 }

@@ -88,7 +88,7 @@ public class CommentService implements ICommentService {
                 Comment parent = commentRepository.getById(commentToCreateDto.getParentCommentId().intValue());
                 if (parent == null)
                     throw new NotFoundException("Parent comment not found");
-                if(parent.getPost().getId() != commentToCreateDto.getParentCommentId().intValue())
+                if(parent.getPost().getId() != commentToCreateDto.getPostId())
                     throw new ClientException("The parent comment is not in this post.");
                 comment.setParentComment(parent);
             }

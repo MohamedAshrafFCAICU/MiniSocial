@@ -2,8 +2,11 @@ package Services;
 
 import CustomizedExceptions.ClientException;
 import CustomizedExceptions.InternalServerException;
+import CustomizedExceptions.NotFoundException;
+import CustomizedExceptions.UnAuthorizedException;
 import DTOs.UserToLoginDto;
 import DTOs.UserToRegisterDto;
+import DTOs.UserToReturnDto;
 import DTOs.UserToUpdateProfileDto;
 import Entities.Authentication;
 import Entities.User;
@@ -14,6 +17,8 @@ import RepositoriesContract.IUserRepository;
 import ServicesContract.IIdentityService;
 import jakarta.ejb.*;
 import org.mindrot.jbcrypt.BCrypt;
+
+import java.util.List;
 
 @Stateless
 @TransactionManagement(TransactionManagementType.CONTAINER)
@@ -182,4 +187,63 @@ public class IdentityService implements IIdentityService
 
 
     }
+
+    public UserToReturnDto getUserByEmail(String token , String email)
+    {
+
+        try {
+            User user = _AuthenticationService.authenticate(token , authenticationRepository);
+
+            if(email == null)
+                throw new ClientException("Invalid Email Address.");
+
+            User userWithEmail = userRepository.getUserByEmail(email);
+
+            if(userWithEmail == null)
+                throw new NotFoundException("User Not Found.");
+
+            UserToReturnDto userToReturnDto = new UserToReturnDto();
+            userToReturnDto.setUserId(userWithEmail.getId());
+            userToReturnDto.setFirstName(userWithEmail.getfName());
+            userToReturnDto.setLastName(userWithEmail.getlName());
+            userToReturnDto.setBio(userWithEmail.getBio());
+
+            return userToReturnDto;
+        }
+        catch (InternalServerException e)
+        {
+            throw e;
+        }
+
+    }
+
+    public String deleteUser(String token , int userId)
+    {
+
+        try {
+            User user = _AuthenticationService.authenticate(token , authenticationRepository);
+
+            User bannedUser = userRepository.getById(userId);
+
+            if(bannedUser == null)
+                throw new NotFoundException("User not found.");
+
+            if(user.getRole() != Role.ADMIN)
+                throw new UnAuthorizedException("You are not authorized to delete this User.");
+
+            bannedUser.getPosts().clear();
+            bannedUser.getLikes().clear();
+            bannedUser.getComments().clear();
+
+            userRepository.delete(userId);
+
+            return "User Deleted Successfully";
+        }
+        catch (InternalServerException e)
+        {
+            throw e;
+        }
+
+    }
+
 }
